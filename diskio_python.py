@@ -40,11 +40,9 @@ class RamDisk(Disk):
         pass
 
     def read(self, sector, count) -> bytes:
-        print("read ramdisk(%d, %d)" % (sector, count))
         offset = sector * self.sector_size
         return self.storage[offset:offset+count]
     def write(self, sector, count, buff: bytes):
-        print("write ramdisk(%d, %d) := %s" % (sector, count, buff))
         assert(len(buff) == count, "Write failed. Non-matching write buffer.")
         offset = sector * self.sector_size
         self.storage[offset:offset+count] = buff
