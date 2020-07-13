@@ -2,4 +2,4 @@ all:
 	python Setup.py build_ext --inplace
 
 test:	all
-	python run_cheese.py
+	python run_check.py
