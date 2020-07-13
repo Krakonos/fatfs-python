@@ -5,6 +5,6 @@ from Cython.Build import cythonize
 setup(
   name = 'diskio',
   ext_modules=cythonize([
-    Extension("diskio", ["src/diskio_wrapper.pyx", "src/diskiocheck.c", "src/ffsystem.c", "src/ffunicode.c"]),
+    Extension("diskio", ["src/diskio_wrapper.pyx", "src/diskiocheck.c", "fatfs/source/ffsystem.c", "fatfs/source/ffunicode.c"]),
     ]),
 )
