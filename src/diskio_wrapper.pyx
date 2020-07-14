@@ -1,23 +1,11 @@
-from libc.stdint cimport uint16_t 
-from libc.stdint cimport uint32_t 
-from libc.stdint cimport uint64_t 
+from ff cimport *
 
 from diskio_python import RamDisk
 
 from cython.operator import dereference
 
-cdef extern from "ff.h":
-    ctypedef unsigned int    UINT
-    ctypedef unsigned char   BYTE
-    ctypedef uint16_t        WORD
-    ctypedef uint16_t        WCHAR
-    ctypedef uint32_t        DWORD
-    ctypedef uint64_t        QWORD
-    ctypedef char            TCHAR
-
 cdef extern from "diskio.h":
     ctypedef BYTE             DSTATUS
-    #ctypedef BYTE            DSTATUS
 
 # Defined as macros in diskio.h
 # We will duplicate them here as enum for further use
@@ -51,8 +39,10 @@ cdef extern from "diskio.h":
 __diskio_wrapper_disks = {}
 
 cdef DSTATUS disk_initialize (BYTE pdrv):
-    __diskio_wrapper_disks[pdrv] = RamDisk(bytearray(512*256))
-    return DSTATUS_Values.STA_OK
+    if pdrv in __diskio_wrapper_disks:
+        return DSTATUS_Values.STA_OK
+    else:
+        return DSTATUS_Values.STA_NODISK
 
 cdef DSTATUS disk_status (BYTE pdrv):
     if pdrv in __diskio_wrapper_disks:
@@ -102,6 +92,126 @@ cdef DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff):
 
 cdef extern int diskiocheck()
 
+import datetime
+
+cdef extern from "diskio.h":
+    DWORD get_fattime()
+
+cdef DWORD get_fattime():
+    t = datetime.datetime.now()
+    return ((t.year - 1980) << 25) | (t.month << 21) | (t.day << 16) | (t.minute << 5) | int(t.second / 2)
+    # Return Value
+    # Currnet local time shall be returned as bit-fields packed into a DWORD value. The bit fields are as follows:
+    # bit31:25
+    #     Year origin from the 1980 (0..127, e.g. 37 for 2017)
+    # bit24:21
+    #     Month (1..12)
+    # bit20:16
+    #     Day of the month (1..31)
+    # bit15:11
+    #     Hour (0..23)
+    # bit10:5
+    #     Minute (0..59)
+    # bit4:0
+    #     Second / 2 (0..29, e.g. 25 for 50)
+
+
+
+# TODO: Wrap or remove
+# /* LFN support functions */
+# #if FF_USE_LFN >= 1						/* Code conversion (defined in unicode.c) */
+# WCHAR ff_oem2uni (WCHAR oem, WORD cp);	/* OEM code to Unicode conversion */
+# WCHAR ff_uni2oem (DWORD uni, WORD cp);	/* Unicode to OEM code conversion */
+# DWORD ff_wtoupper (DWORD uni);			/* Unicode upper-case conversion */
+# #endif
+# #if FF_USE_LFN == 3						/* Dynamic memory allocation */
+# void* ff_memalloc (UINT msize);			/* Allocate memory block */
+# void ff_memfree (void* mblock);			/* Free memory block */
+# #endif
+# 
+# /* Sync functions */
+# #if FF_FS_REENTRANT
+# int ff_cre_syncobj (BYTE vol, FF_SYNC_t* sobj);	/* Create a sync object */
+# int ff_req_grant (FF_SYNC_t sobj);		/* Lock sync object */
+# void ff_rel_grant (FF_SYNC_t sobj);		/* Unlock sync object */
+# int ff_del_syncobj (FF_SYNC_t sobj);	/* Delete a sync object */
+# #endif
+
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+
+class FatFSException(Exception):
+    pass
+
+cdef class FileHandle:
+    cdef FIL *fp
+    def __cinit__(self):
+        self.fp = <FIL*> PyMem_Malloc(sizeof(FIL))
+
+    def __dealloc__(self):
+        PyMem_Free(self.fp)
+
+cdef class FatFSPartition:
+    cdef FATFS* fs
+    cdef int pdev
+    def __cinit__(self, disk):
+        self.fs = <FATFS*> PyMem_Malloc(sizeof(FATFS))
+        # TODO: Can we fetch the constant directly? Or define it here? Does it have to be 10 only?
+        for i in range(10): # corresponds to FF_VOLUMES in ffconf.h
+            if not i in __diskio_wrapper_disks:
+                self.pdev = i
+                __diskio_wrapper_disks[i] = disk
+                break
+            raise FatFSException("Physical disk limit reached. Please unmount some of the partitions.")
+
+
+    def __dealloc__(self):
+        PyMem_Free(self.fs)
+
+    def mount(self):
+        ret = f_mount(self.fs, "%d:" % self.pdev, 1)
+        if ret == FR_OK:
+            return True
+        else:
+            raise FatFSException("FatFS::mount failed with error code %s" % ret)
+
+    def unmount(self):
+        ret = f_mount(NULL, "%d:" % self.pdev, 0)
+        if ret == FR_OK:
+            del __diskio_wrapper_disks[self.pdev]
+            return True
+        else:
+            raise FatFSException("FatFS::unmount failed with error code %s" % ret)
+
+    def mkfs(self):
+        cdef char* buff = <char*> PyMem_Malloc(512)
+        cdef MKFS_PARM opt
+        opt.fmt = FM_FAT | FM_SFD
+        opt.n_fat = 1 # 1 copy of FAT table
+        opt.align = 0 # auto align from lower layer
+        opt.n_root = 0 # auto number of root FAT entries
+        opt.au_size = 0 # auto
+        f_mkfs("%d:" % self.pdev, &opt, buff, 512)
+
+
+def testopen():
+    disk = RamDisk(bytearray(512*256))
+    partition = FatFSPartition(disk)
+    partition.mkfs()
+    partition.mount()
+    handle = FileHandle()
+    ret = f_open(handle.fp, "tf.txt", FA_WRITE | FA_CREATE_ALWAYS)
+    if ret != FR_OK:
+        raise FatFSException("FatFS::open failed with error code %s" % ret)
+    ret = f_close(handle.fp)
+    if ret != FR_OK:
+        raise FatFSException("FatFS::close failed with error code %s" % ret)
+    partition.unmount()
+
+    with open("/tmp/fatfs.img", "wb") as fh:
+        fh.write(disk.storage)
+
 def check():
-    return diskiocheck()
+    __diskio_wrapper_disks[0] = RamDisk(bytearray(512*256))
+    ret = diskiocheck()
+    del __diskio_wrapper_disks[0]
 

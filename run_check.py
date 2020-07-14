@@ -3,3 +3,5 @@
 import diskio
 
 diskio.check()
+
+diskio.testopen()
