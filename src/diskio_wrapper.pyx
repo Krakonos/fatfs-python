@@ -120,12 +120,14 @@ cdef class FileHandle:
 cdef class FatFSPartition:
     cdef FATFS* fs
     cdef int pdev
+    cdef public object pname
     def __cinit__(self, disk):
         self.fs = <FATFS*> PyMem_Malloc(sizeof(FATFS))
         # TODO: Can we fetch the constant directly? Or define it here? Does it have to be 10 only?
         for i in range(10): # corresponds to FF_VOLUMES in ffconf.h
             if not i in __diskio_wrapper_disks:
                 self.pdev = i
+                self.pname = bytes("%d:" % i, 'ascii')
                 __diskio_wrapper_disks[i] = disk
                 break
             raise FatFSException("Physical disk limit reached. Please unmount some of the partitions.")
@@ -135,14 +137,14 @@ cdef class FatFSPartition:
         PyMem_Free(self.fs)
 
     def mount(self):
-        ret = f_mount(self.fs, "%d:" % self.pdev, 1)
+        ret = f_mount(self.fs, self.pname, 1)
         if ret == FR_OK:
             return True
         else:
             raise FatFSException("FatFS::mount failed with error code %s" % ret)
 
     def unmount(self):
-        ret = f_mount(NULL, "%d:" % self.pdev, 0)
+        ret = f_mount(NULL, self.pname, 0)
         if ret == FR_OK:
             del __diskio_wrapper_disks[self.pdev]
             return True
@@ -157,7 +159,7 @@ cdef class FatFSPartition:
         opt.align = 0 # auto align from lower layer
         opt.n_root = 0 # auto number of root FAT entries
         opt.au_size = 0 # auto
-        f_mkfs("%d:" % self.pdev, &opt, buff, 512)
+        f_mkfs(self.pname, &opt, buff, 512)
 
 
 def testopen():
