@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-import diskio
+import fatfs
 
-diskio.check()
+fatfs.check()
 
-diskio.testopen()
+fatfs.testopen()
