@@ -1,7 +1,7 @@
 from ff cimport *
 from diskio cimport *
 
-from diskio_python import RamDisk
+#from pyfatfs.diskio import RamDisk
 
 __diskio_wrapper_disks = {}
 
@@ -111,10 +111,19 @@ class FatFSException(Exception):
 
 cdef class FileHandle:
     cdef FIL *fp
+    cdef bint isopen
     def __cinit__(self):
         self.fp = <FIL*> PyMem_Malloc(sizeof(FIL))
+        self.isopen = False
+
+    def close(self):
+        ret = f_close(self.fp)
+        if ret != FR_OK:
+            raise FatFSException("FatFS::close failed with error code %s" % ret)
 
     def __dealloc__(self):
+        if self.isopen:
+            self.close()
         PyMem_Free(self.fp)
 
 cdef class FatFSPartition:
@@ -161,26 +170,24 @@ cdef class FatFSPartition:
         opt.au_size = 0 # auto
         f_mkfs(self.pname, &opt, buff, 512)
 
+    def open(self, path, mode):
+        # TODO: Implement mode.
+        handle = FileHandle()
+        ret = f_open(handle.fp, bytes(path, 'ascii'), FA_WRITE | FA_CREATE_ALWAYS)
+        if ret != FR_OK:
+            raise FatFSException("FatFS::open failed with error code %s" % ret)
+        handle.isopen = True
+        return handle
 
-def testopen():
-    disk = RamDisk(bytearray(512*256))
-    partition = FatFSPartition(disk)
-    partition.mkfs()
-    partition.mount()
-    handle = FileHandle()
-    ret = f_open(handle.fp, "tf.txt", FA_WRITE | FA_CREATE_ALWAYS)
-    if ret != FR_OK:
-        raise FatFSException("FatFS::open failed with error code %s" % ret)
-    ret = f_close(handle.fp)
-    if ret != FR_OK:
-        raise FatFSException("FatFS::close failed with error code %s" % ret)
-    partition.unmount()
-
-    with open("/tmp/fatfs.img", "wb") as fh:
-        fh.write(disk.storage)
-
-def check():
-    __diskio_wrapper_disks[0] = RamDisk(bytearray(512*256))
-    ret = diskiocheck()
-    del __diskio_wrapper_disks[0]
+#def testopen():
+#    disk = RamDisk(bytearray(512*256))
+#    partition = FatFSPartition(disk)
+#    partition.mkfs()
+#    partition.mount()
+#    handle = FileHandle()
+#
+#def check():
+#    __diskio_wrapper_disks[0] = RamDisk(bytearray(512*256))
+#    ret = diskiocheck()
+#    del __diskio_wrapper_disks[0]
 

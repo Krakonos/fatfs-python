@@ -1,8 +1,8 @@
 all:
-	python setup.py build_ext --inplace
+	CYTHONIZE=1 python setup.py build_ext --inplace
 
 clean:
-	rm diskio.cpython-38-x86_64-linux-gnu.so
+	rm fatfs.cpython-38-x86_64-linux-gnu.so
 
 test:	all
-	python run_check.py
+	tox
