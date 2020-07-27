@@ -38,6 +38,7 @@ else:
     extensions = no_cythonize(extensions)
 
 setup(
+    version="0.0.1",
     name='fatfs',
     ext_modules=extensions,
     packages=['pyfatfs', 'pyfatfs.tests'],

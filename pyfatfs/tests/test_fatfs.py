@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from fatfs import *
+import fatfs
+from fatfs import FatFSPartition
 
 from pyfatfs.diskio import RamDisk
 
@@ -18,5 +19,9 @@ def test_fatfs_open():
     handle.close()
     partition.unmount()
 
-    with open("/tmp/fatfs.img", "wb") as fh:
-        fh.write(disk.storage)
+def test_diskio():
+    disk = RamDisk(bytearray(512*256))
+    fatfs.check_diskio(disk)
+
+#    with open("/tmp/fatfs.img", "wb") as fh:
+#        fh.write(disk.storage)

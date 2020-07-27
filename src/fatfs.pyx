@@ -179,15 +179,9 @@ cdef class FatFSPartition:
         handle.isopen = True
         return handle
 
-#def testopen():
-#    disk = RamDisk(bytearray(512*256))
-#    partition = FatFSPartition(disk)
-#    partition.mkfs()
-#    partition.mount()
-#    handle = FileHandle()
-#
-#def check():
-#    __diskio_wrapper_disks[0] = RamDisk(bytearray(512*256))
-#    ret = diskiocheck()
-#    del __diskio_wrapper_disks[0]
+def check_diskio(drive):
+    assert(not 0 in __diskio_wrapper_disks, "Check diskio must be used before mounting any real drives.")
+    __diskio_wrapper_disks[0] = drive
+    ret = diskiocheck()
+    del __diskio_wrapper_disks[0]
 
