@@ -53,8 +53,15 @@ def test_fatfs_write():
         handle = partition.open("tf2.txt", "wb")
         written = handle.write(s)
         handle.close()
-    partition.dump("/tmp/testpart.img")
+    partition.dump("/tmp/test_fatfs_write.img")
     assert len(s) == written
+
+def test_fatfs_mkdir():
+    partition = NewPartition()
+    with partition:
+        partition.mkdir("testdir1")
+        partition.mkdir("testdir1/a")
+    partition.dump("/tmp/test_fatfs_mkdir.img")
 
 def test_diskio():
     disk = RamDisk(bytearray(512*256))

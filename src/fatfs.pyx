@@ -167,8 +167,8 @@ def pyf_write (FIL_Handle fph, data) -> FRESULT:
 #def pyf_findnext (DIR* dp, FILINFO* fno) -> FRESULT:
 #    raise Exception("Not implemented.")
 ## Create a sub directory
-#def pyf_mkdir (const TCHAR* path) -> FRESULT:
-#    raise Exception("Not implemented.")
+def pyf_mkdir (path) -> FRESULT:
+    return f_mkdir(path)
 ## Delete an existing file or directory
 #def pyf_unlink (const TCHAR* path) -> FRESULT:
 #    raise Exception("Not implemented.")
@@ -252,10 +252,16 @@ def pyf_mkfs (path, n_fat = 1, align = 0, n_root = 0, au_size = 0, workarea_size
 
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
+def fresult_to_name(fresult):
+    # TODO: Implement.
+    return "UNKNOWN_%i" % fresult
+
 class FatFSException(Exception):
+    def __init__(self, function, ret, *args):
+        args_str = ", ".join(map(str, args))
+        ret_str = fresult_to_name(ret)
+        Exception.__init__(self, "FatFS::%s(%s) failed with error code %i (%s)" % (function, args_str, ret, ret_str))
     pass
-
-
 
 class FileHandle:
     def __init__(self):
@@ -299,13 +305,18 @@ class FatFSPartition():
                 __diskio_wrapper_disks[i] = disk
                 break
             raise FatFSException("Physical disk limit reached. Please unmount some of the partitions.")
+    def _adjust_path(self, path):
+        """
+        Adjusts path for use in pyf_ calls: adds partition prefix and converts to bytes.
+        """
+        return self.pname + bytes(path, 'ascii')
 
     def mount(self):
         ret = pyf_mount(self.fs, self.pname, 1)
         if ret == FR_OK:
             return True
         else:
-            raise FatFSException("FatFS::mount failed with error code %s" % ret)
+            raise FatFSException("FatFS::mount(%s) failed with error code %s" % (self.pname, ret))
 
     def unmount(self):
         ret = f_mount(NULL, self.pname, 0)
@@ -313,17 +324,25 @@ class FatFSPartition():
             del __diskio_wrapper_disks[self.pdev]
             return True
         else:
-            raise FatFSException("FatFS::unmount failed with error code %s" % ret)
+            raise FatFSException("FatFS::unmount(%s) failed with error code %s" % (self.pname, ret))
 
     def mkfs(self):
         pyf_mkfs(self.pname)
 
+    def mkdir(self, path):
+        p = self._adjust_path(path)
+        ret = pyf_mkdir(p)
+        if ret != FR_OK:
+            #raise FatFSException("FatFS::mkdir(%s) failed with error code %s" % (p, ret))
+            raise FatFSException("mount", ret, p)
+
     def open(self, path, mode):
         # TODO: Implement mode.
         handle = FileHandle()
-        ret = pyf_open(handle.fp, self.pname+bytes(path, 'ascii'), FA_WRITE | FA_CREATE_ALWAYS)
+        p = self._adjust_path(path)
+        ret = pyf_open(handle.fp, p, FA_WRITE | FA_CREATE_ALWAYS)
         if ret != FR_OK:
-            raise FatFSException("FatFS::open failed with error code %s" % ret)
+            raise FatFSException("FatFS::open(%s) failed with error code %s" % (p, ret))
         handle.isopen = True
         return handle
 
