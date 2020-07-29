@@ -1,1 +1,1 @@
-include fatfs/source/*.h
+include foreign/fatfs/source/*.h

@@ -1,4 +1,4 @@
-from ff cimport *
+from fatfs.ff cimport *
 
 # Defined as macros in diskio.h
 # We will duplicate them here as enum for further use

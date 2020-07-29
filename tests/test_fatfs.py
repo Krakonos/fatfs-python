@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
 import fatfs
-from fatfs import FatFSPartition
-
-from pyfatfs.diskio import RamDisk
+from fatfs import FatFSPartition, RamDisk
 
 class NewPartition(FatFSPartition):
     """
@@ -65,4 +63,4 @@ def test_fatfs_mkdir():
 
 def test_diskio():
     disk = RamDisk(bytearray(512*256))
-    fatfs.check_diskio(disk)
+    fatfs.wrapper.check_diskio(disk)
