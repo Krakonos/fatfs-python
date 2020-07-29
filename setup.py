@@ -56,14 +56,14 @@ setup(
     zip_safe=False,
     python_requires='>=3.6', #TODO: Actual version?
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha"
-        'Intended Audience :: Developers',
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        'Topic :: Scientific/Engineering',
-        'Topic :: Software Development :: Embedded Systems',
-        'Topic :: Software Development :: Libraries',
-        'Topic :: System :: Filesystems',
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Embedded Systems",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: System :: Filesystems",
     ],
 )
