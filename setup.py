@@ -42,7 +42,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='fatfs',
-    version="0.0.1",
+    version="0.0.2",
     author="Ladislav Laska",
     author_email="krakonos@krakonos.org",
     description="A wrapper around ChaN's FatFS library for FAT filesystem manipulation.",
