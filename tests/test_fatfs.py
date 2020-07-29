@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 import fatfs
-from fatfs import FatFSPartition, RamDisk
+from fatfs import Partition, RamDisk
 
-class NewPartition(FatFSPartition):
+class NewPartition(Partition):
     """
     A helper class that handles partition mounts and initialization if necessary.
     """
@@ -16,7 +16,7 @@ class NewPartition(FatFSPartition):
             self.disk = disk
         else:
             self.disk = RamDisk(bytearray(512*256))
-            FatFSPartition.__init__(self, self.disk)
+            Partition.__init__(self, self.disk)
             self.mkfs()
 
     def __enter__(self):
@@ -36,7 +36,7 @@ class NewPartition(FatFSPartition):
 
 def test_fatfs_open():
     disk = RamDisk(bytearray(512*256))
-    partition = FatFSPartition(disk)
+    partition = Partition(disk)
     partition.mkfs()
     partition.mount()
     handle = partition.open("tf.txt", "wb")

@@ -289,7 +289,7 @@ class FileHandle:
         pass
 
 
-class FatFSPartition():
+class Partition():
     def __init__(self, disk):
         self.fs = FATFS_Handle()
         self.disk = disk
