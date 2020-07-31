@@ -48,9 +48,8 @@ def test_fatfs_write():
     s = "HelloWorld!"
     written = 0
     with partition:
-        handle = partition.open("tf2.txt", "wb")
-        written = handle.write(s)
-        handle.close()
+        with partition.open("/tf2.txt", "wb") as handle:
+            written = handle.write(s)
     partition.dump("/tmp/test_fatfs_write.img")
     assert len(s) == written
 
