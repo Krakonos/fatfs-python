@@ -139,7 +139,7 @@ def pyf_write (FIL_Handle fph, data) -> FRESULT:
     cdef char* dataptr = data
     ret = f_write(fph.fp, <void*>dataptr, len(data), &written)
     if ret != FR_OK:
-        raise FatFSException("FatFS::close failed with error code %s" % ret)
+        raise FatFSException("write", ret, fph, data)
     assert((ret != FR_OK) or (written == len(data)), "FatFS::write succeeded, but written different %i bytes out of %i." % (written, len(data)))
     return ret, written
 ## Move file pointer of the file object
@@ -258,6 +258,7 @@ def fresult_to_name(fresult):
 
 class FatFSException(Exception):
     def __init__(self, function, ret, *args):
+        self.code = ret
         args_str = ", ".join(map(str, args))
         ret_str = fresult_to_name(ret)
         Exception.__init__(self, "FatFS::%s(%s) failed with error code %i (%s)" % (function, args_str, ret, ret_str))
@@ -272,6 +273,11 @@ class FileHandle:
         ret = pyf_close(self.fp)
         if ret != FR_OK:
             raise FatFSException("FatFS::close failed with error code %s" % ret)
+    def __enter__(self):
+        return self
+
+    def __exit__(self, except_type, except_value, except_traceback):
+        self.close()
 
     def __dealloc__(self):
         if self.isopen:
@@ -304,7 +310,7 @@ class Partition():
                 self.pname = bytes("%d:" % i, 'ascii')
                 __diskio_wrapper_disks[i] = disk
                 break
-            raise FatFSException("Physical disk limit reached. Please unmount some of the partitions.")
+            raise FatFSException("__init__", -1)
     def _adjust_path(self, path):
         """
         Adjusts path for use in pyf_ calls: adds partition prefix and converts to bytes.
@@ -316,7 +322,7 @@ class Partition():
         if ret == FR_OK:
             return True
         else:
-            raise FatFSException("FatFS::mount(%s) failed with error code %s" % (self.pname, ret))
+            raise FatFSException("mount", ret, self.pname)
 
     def unmount(self):
         ret = f_mount(NULL, self.pname, 0)
@@ -324,7 +330,7 @@ class Partition():
             del __diskio_wrapper_disks[self.pdev]
             return True
         else:
-            raise FatFSException("FatFS::unmount(%s) failed with error code %s" % (self.pname, ret))
+            raise FatFSException("unmount", ret, self.pname)
 
     def mkfs(self):
         pyf_mkfs(self.pname)
@@ -342,7 +348,7 @@ class Partition():
         p = self._adjust_path(path)
         ret = pyf_open(handle.fp, p, FA_WRITE | FA_CREATE_ALWAYS)
         if ret != FR_OK:
-            raise FatFSException("FatFS::open(%s) failed with error code %s" % (p, ret))
+            raise FatFSException("open", ret, p)
         handle.isopen = True
         return handle
 
