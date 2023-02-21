@@ -1,12 +1,16 @@
 #!/usr/bin/python3 
 
 import os
+import sys
 from setuptools import setup, find_packages, Extension
 try:
     from Cython.Build import cythonize
 except ImportError:
     cythonize = None
 
+
+if 'sdist' in sys.argv and "CYTHONIZE" not in os.environ:
+    raise Exception("Please use supplied makefile to build the package.")
 
 # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#distributing-cython-modules
 def no_cythonize(extensions, **_ignore):
@@ -42,7 +46,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='fatfs',
-    version="0.0.5",
+    version="0.0.6",
     author="Ladislav Laska",
     author_email="krakonos@krakonos.org",
     description="A wrapper around ChaN's FatFS library for FAT filesystem manipulation.",
