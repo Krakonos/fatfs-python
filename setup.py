@@ -33,7 +33,12 @@ extensions = [
     Extension("wrapper", ["fatfs/wrapper.pyx", "fatfs/diskiocheck.c", "foreign/fatfs/source/ff.c", "foreign/fatfs/source/ffsystem.c", "foreign/fatfs/source/ffunicode.c"], include_dirs=["foreign/fatfs/source"]),
 ]
 
-CYTHONIZE = bool(int(os.getenv("CYTHONIZE", 0))) and cythonize is not None
+cythonize_env = bool(int(os.getenv("CYTHONIZE", 0)))
+
+if cythonize_env and cythonize_env is None:
+    raise Exception("Cython needs to be installed for CYTHONIZE=1")
+
+CYTHONIZE = cythonize_env and cythonize is not None
 
 if CYTHONIZE:
     compiler_directives = {"language_level": 3, "embedsignature": True}
@@ -46,7 +51,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='fatfs',
-    version="0.0.6",
+    version="0.0.7",
     author="Ladislav Laska",
     author_email="krakonos@krakonos.org",
     description="A wrapper around ChaN's FatFS library for FAT filesystem manipulation.",
@@ -57,9 +62,9 @@ setup(
     url="https://github.com/krakonos/fatfs-python",
     #packages=['pyfatfs', 'pyfatfs.tests'],
     packages=find_packages(),
-    install_requires=['cython'],
+    setup_requires=['cython'],
     zip_safe=False,
-    python_requires='>=3.6', #TODO: Actual version?
+    python_requires='>=3.8',
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
