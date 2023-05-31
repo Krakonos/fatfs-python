@@ -1,11 +1,7 @@
 name: Build and upload to PyPI
 
 on:
-  # uncomment to build on push (useful for testing)
-  # push:
-  release:
-    types:
-      - published
+  push:
 
 jobs:
   make_sdist:
@@ -25,6 +21,7 @@ jobs:
       run: CYTHONIZE=0 python -m build --sdist
     - uses: actions/upload-artifact@v3
       with:
+        name: fatfs-dist
         path: dist/*.tar.gz
     - name: Check metadata
       run: twine check dist/*
@@ -46,15 +43,17 @@ jobs:
           CIBW_ENVIRONMENT_PASS_LINUX: CYTHONIZE
       - uses: actions/upload-artifact@v3
         with:
+          name: fatfs-dist
           path: wheelhouse/*.whl
 
-  upload_all:
+  upload_to_pypi:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/download-artifact@v3
       with:
-        name: artifact
+        name: fatfs-dist
         path: dist
     - uses: pypa/gh-action-pypi-publish@v1.5.0
       with:
