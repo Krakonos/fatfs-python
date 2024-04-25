@@ -61,9 +61,6 @@ cdef extern int diskiocheck()
 
 import datetime
 
-cdef extern from "diskio.h":
-    DWORD get_fattime()
-
 cdef DWORD get_fattime():
     t = datetime.datetime.now()
     return ((t.year - 1980) << 25) | (t.month << 21) | (t.day << 16) | (t.minute << 5) | int(t.second / 2)
