@@ -41,6 +41,7 @@ jobs:
           CIBW_BEFORE_BUILD: pip install cython
           CIBW_ENVIRONMENT: CYTHONIZE=1
           CIBW_ENVIRONMENT_PASS_LINUX: CYTHONIZE
+          CIBW_SKIP: "*-win32"
       - uses: actions/upload-artifact@v3
         with:
           name: fatfs-dist
