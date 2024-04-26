@@ -5,19 +5,19 @@ from fatfs.diskio cimport *
 
 __diskio_wrapper_disks = {}
 
-cdef DSTATUS disk_initialize (BYTE pdrv):
+cdef public DSTATUS disk_initialize (BYTE pdrv):
     if pdrv in __diskio_wrapper_disks:
         return DSTATUS_Values.STA_OK
     else:
         return DSTATUS_Values.STA_NODISK
 
-cdef DSTATUS disk_status (BYTE pdrv):
+cdef public DSTATUS disk_status (BYTE pdrv):
     if pdrv in __diskio_wrapper_disks:
         return DSTATUS_Values.STA_OK
     else:
         return DSTATUS_Values.STA_NODISK
 
-cdef DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count):
+cdef public DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count):
     if not pdrv in __diskio_wrapper_disks:
         return DRESULT.RES_NOTRDY
     drive = __diskio_wrapper_disks[pdrv]
@@ -30,7 +30,7 @@ cdef DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count):
     # TODO: This doesn't work: buff[:count] = data
     return DRESULT.RES_OK
 
-cdef DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count):
+cdef public DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count):
     if not pdrv in __diskio_wrapper_disks:
         return DRESULT.RES_NOTRDY
     drive = __diskio_wrapper_disks[pdrv]
@@ -40,7 +40,7 @@ cdef DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count):
     drive.write(sector, count, buff[:count])
     return DRESULT.RES_OK
 
-cdef DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff):
+cdef public DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff):
     if not pdrv in __diskio_wrapper_disks:
         return DRESULT.RES_NOTRDY
     drive = __diskio_wrapper_disks[pdrv]
@@ -61,7 +61,7 @@ cdef extern int diskiocheck()
 
 import datetime
 
-cdef DWORD get_fattime():
+cdef public DWORD get_fattime():
     t = datetime.datetime.now()
     return ((t.year - 1980) << 25) | (t.month << 21) | (t.day << 16) | (t.minute << 5) | int(t.second / 2)
     # Return Value
