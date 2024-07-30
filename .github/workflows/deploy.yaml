@@ -23,6 +23,7 @@ jobs:
       with:
         name: fatfs-dist
         path: dist/*.tar.gz
+        overwrite: true
     - name: Check metadata
       run: twine check dist/*
 
@@ -46,6 +47,7 @@ jobs:
         with:
           name: fatfs-dist
           path: wheelhouse/*.whl
+          overwrite: true
 
   upload_to_pypi:
     if: startsWith(github.ref, 'refs/tags/v')
